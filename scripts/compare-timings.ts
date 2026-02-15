@@ -42,7 +42,10 @@ function log(message: string): void {
 
 function readOldTimings(): TimingsFile {
   try {
-    const oldContent = execSync(`git show HEAD:${TIMINGS_FILE}`, { encoding: 'utf8' });
+    const oldContent = execSync(`git show HEAD:${TIMINGS_FILE}`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore'] // Ignore stderr to prevent sandbox-helper errors from polluting output
+    });
     return JSON.parse(oldContent);
   } catch {
     log('Error getting old timings, using empty file');
@@ -59,7 +62,9 @@ function cleanupFiles({ keepNew, reason }: CleanupOptions): void {
     log(`Keeping new timings: ${reason}`);
   } else {
     log(`Reverting to old timings: ${reason}`);
-    execSync(`git checkout HEAD -- ${TIMINGS_FILE}`);
+    execSync(`git checkout HEAD -- ${TIMINGS_FILE}`, {
+      stdio: ['pipe', 'pipe', 'ignore'] // Ignore stderr to prevent sandbox-helper errors from polluting output
+    });
   }
 }
 

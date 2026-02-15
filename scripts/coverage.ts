@@ -12,8 +12,12 @@ const main = async () => {
     coverageFiles.map((file) => cp(file, `${coverageDir}/combined/${file.split('/')[1]}.json`))
   );
 
-  execSync('npx nyc merge coverage/combined coverage/combined-final.json');
-  execSync('npx nyc report -t coverage --report-dir coverage/html --reporter=html-spa');
+  execSync('npx nyc merge coverage/combined coverage/combined-final.json', {
+    stdio: ['pipe', 'pipe', 'ignore'] // Ignore stderr to prevent sandbox-helper errors from polluting output
+  });
+  execSync('npx nyc report -t coverage --report-dir coverage/html --reporter=html-spa', {
+    stdio: ['pipe', 'pipe', 'ignore'] // Ignore stderr to prevent sandbox-helper errors from polluting output
+  });
 };
 
 void main();
