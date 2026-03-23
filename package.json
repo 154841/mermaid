@@ -152,5 +152,8 @@
       "sharp",
       "vue-demi"
     ]
+  },
+  "dependencies": {
+    "docx": "^9.6.1"
   }
 }
