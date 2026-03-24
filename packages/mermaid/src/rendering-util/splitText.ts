@@ -49,25 +49,52 @@ function splitWordToFitWidthRecursion(
   remainingChars: string[],
   type: MarkdownWordType
 ): [MarkdownWord, MarkdownWord] {
-  if (remainingChars.length === 0) {
+  const allChars = [...usedChars, ...remainingChars];
+  if (allChars.length === 0) {
     return [
-      { content: usedChars.join(''), type },
+      { content: '', type },
       { content: '', type },
     ];
   }
-  const [nextChar, ...rest] = remainingChars;
-  const newWord = [...usedChars, nextChar];
-  if (checkFit([{ content: newWord.join(''), type }])) {
-    return splitWordToFitWidthRecursion(checkFit, newWord, rest, type);
+
+  // Use binary search to find how many characters fit,
+  // reducing O(n) checkFit calls to O(log n)
+  const start = usedChars.length;
+  let lo = start;
+  let hi = allChars.length;
+  let bestFit = start; // number of chars that fit
+
+  // Check if all characters fit
+  if (checkFit([{ content: allChars.join(''), type }])) {
+    return [
+      { content: allChars.join(''), type },
+      { content: '', type },
+    ];
   }
-  if (usedChars.length === 0 && nextChar) {
-    // If the first character does not fit, split it anyway
-    usedChars.push(nextChar);
-    remainingChars.shift();
+
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (mid === 0) {
+      lo = 1;
+      continue;
+    }
+    const candidate = allChars.slice(0, mid).join('');
+    if (checkFit([{ content: candidate, type }])) {
+      bestFit = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
   }
+
+  // If no character fits, force at least one character to avoid infinite loops
+  if (bestFit === 0) {
+    bestFit = 1;
+  }
+
   return [
-    { content: usedChars.join(''), type },
-    { content: remainingChars.join(''), type },
+    { content: allChars.slice(0, bestFit).join(''), type },
+    { content: allChars.slice(bestFit).join(''), type },
   ];
 }
 

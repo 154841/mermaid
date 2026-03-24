@@ -264,20 +264,32 @@ const draw: DrawDefinition = (_text, id, _version, diagram: Diagram) => {
       const currentTextContentLength = textNode.getComputedTextLength();
       if (currentTextContentLength > actualAvailableWidth) {
         const ellipsis = '...';
-        let currentTruncatedText = originalText;
-        while (currentTruncatedText.length > 0) {
-          currentTruncatedText = originalText.substring(0, currentTruncatedText.length - 1);
-          if (currentTruncatedText.length === 0) {
-            self.text(ellipsis);
-            if (textNode.getComputedTextLength() > actualAvailableWidth) {
-              self.text('');
-            }
-            break;
+        // Use binary search to find the longest truncated text that fits,
+        // reducing O(n) getComputedTextLength() calls to O(log n)
+        let lo = 0;
+        let hi = originalText.length;
+        let bestFit = 0;
+        while (lo <= hi) {
+          const mid = Math.floor((lo + hi) / 2);
+          if (mid === 0) {
+            lo = mid + 1;
+            continue;
           }
-          self.text(currentTruncatedText + ellipsis);
+          self.text(originalText.substring(0, mid) + ellipsis);
           if (textNode.getComputedTextLength() <= actualAvailableWidth) {
-            break;
+            bestFit = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
           }
+        }
+        if (bestFit === 0) {
+          self.text(ellipsis);
+          if (textNode.getComputedTextLength() > actualAvailableWidth) {
+            self.text('');
+          }
+        } else {
+          self.text(originalText.substring(0, bestFit) + ellipsis);
         }
       }
     });
@@ -390,12 +402,23 @@ const draw: DrawDefinition = (_text, id, _version, diagram: Diagram) => {
     const minValueFontSize = 6;
     const spacingBetweenLabelAndValue = 2;
 
-    // 1. Adjust label font size to fit width
-    while (
-      textNode.getComputedTextLength() > availableWidth &&
-      currentLabelFontSize > minLabelFontSize
-    ) {
-      currentLabelFontSize--;
+    // 1. Adjust label font size to fit width using binary search
+    // to reduce O(n) getComputedTextLength() calls to O(log n)
+    if (textNode.getComputedTextLength() > availableWidth) {
+      let lo = minLabelFontSize;
+      let hi = currentLabelFontSize;
+      let bestFit = minLabelFontSize;
+      while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        self.style('font-size', `${mid}px`);
+        if (textNode.getComputedTextLength() <= availableWidth) {
+          bestFit = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      currentLabelFontSize = bestFit;
       self.style('font-size', `${currentLabelFontSize}px`);
     }
 
